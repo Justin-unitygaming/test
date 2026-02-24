@@ -86,3 +86,11 @@ class BookingManager:
         async with self.lock:
             # Return a copy to avoid external modification of the list
             return list(self.slots)
+
+    async def get_slot_by_id(self, slot_id):
+        async with self.lock:
+            for slot in self.slots:
+                if slot["id"] == slot_id:
+                    # Return a copy to avoid external modification
+                    return dict(slot)
+            return None
