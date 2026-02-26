@@ -70,5 +70,14 @@ class TestBookingManager(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(slots), 1)
         self.assertEqual(slots[0]["description"], "Persist Slot")
 
+    async def test_get_slot_by_id(self):
+        slot_id = await self.manager.add_slot("2023-12-01 10:00", "Find Me", 1)
+        slot = await self.manager.get_slot_by_id(slot_id)
+        self.assertIsNotNone(slot)
+        self.assertEqual(slot["description"], "Find Me")
+
+        none_slot = await self.manager.get_slot_by_id(999)
+        self.assertIsNone(none_slot)
+
 if __name__ == "__main__":
     unittest.main()

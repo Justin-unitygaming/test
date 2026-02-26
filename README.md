@@ -15,12 +15,14 @@ Ein einfacher Discord Bot zum Verwalten von Buchungsslots, entwickelt mit Python
 - `/add_slot`: Erstellt einen neuen Buchungstermin.
 - `/delete_slot`: Entfernt einen vorhandenen Termin.
 - `/list_all_slots`: Zeigt alle Termine inklusive Buchungsstatus an.
+- `/show_bookings`: Zeigt die Nutzerdetails für einen spezifischen Slot an.
 
 ### Für Nutzer
 - `/view_slots`: Zeigt alle aktuell verfügbaren Termine an.
 - `/book`: Bucht einen freien Termin.
 - `/my_bookings`: Zeigt die eigenen gebuchten Termine an.
 - `/cancel`: Storniert eine eigene Buchung.
+- `/help`: Zeigt eine Übersicht aller Befehle an.
 
 ## Einrichtung
 
