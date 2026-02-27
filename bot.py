@@ -42,6 +42,16 @@ async def on_application_command_error(ctx, error):
 @option("beschreibung", description="Kurze Beschreibung des Termins")
 @option("kapazität", description="Maximale Anzahl an möglichen Buchungen", default=1)
 async def add_slot(ctx, datum: str, beschreibung: str, kapazität: int):
+    """Erstellt einen neuen Buchungstermin."""
+    if kapazität < 1:
+        embed = discord.Embed(
+            title="Eingabefehler",
+            description="❌ Die Kapazität muss mindestens 1 sein.",
+            color=discord.Color.red()
+        )
+        await ctx.respond(embed=embed, ephemeral=True)
+        return
+
     slot_id = await manager.add_slot(datum, beschreibung, kapazität)
     embed = discord.Embed(
         title="Slot erstellt",
@@ -57,6 +67,7 @@ async def add_slot(ctx, datum: str, beschreibung: str, kapazität: int):
 @commands.has_permissions(administrator=True)
 @option("slot_id", description="Die ID des zu löschenden Slots")
 async def delete_slot(ctx, slot_id: int):
+    """Löscht einen vorhandenen Buchungstermin."""
     success = await manager.delete_slot(slot_id)
     if success:
         embed = discord.Embed(
@@ -76,6 +87,7 @@ async def delete_slot(ctx, slot_id: int):
 @bot.slash_command(description="Alle Buchungsslots anzeigen (Administrator erforderlich)")
 @commands.has_permissions(administrator=True)
 async def list_all_slots(ctx):
+    """Listet alle Termine inklusive Buchungsstatus auf."""
     slots = await manager.get_all_slots()
     if not slots:
         embed = discord.Embed(
@@ -103,6 +115,7 @@ async def list_all_slots(ctx):
 @commands.has_permissions(administrator=True)
 @option("slot_id", description="Die ID des Slots")
 async def show_bookings(ctx, slot_id: int):
+    """Zeigt an, welche Nutzer einen spezifischen Slot gebucht haben."""
     slot = await manager.get_slot_by_id(slot_id)
     if not slot:
         embed = discord.Embed(
@@ -129,6 +142,7 @@ async def show_bookings(ctx, slot_id: int):
 # Nutzer-Befehle
 @bot.slash_command(description="Hilfe zu den Befehlen anzeigen")
 async def help(ctx):
+    """Zeigt eine Übersicht aller verfügbaren Befehle an."""
     embed = discord.Embed(
         title="🤖 Hilfe zum Buchungssystem",
         description="Hier ist eine Übersicht aller verfügbaren Befehle:",
@@ -157,6 +171,7 @@ async def help(ctx):
 
 @bot.slash_command(description="Verfügbare Buchungsslots anzeigen")
 async def view_slots(ctx):
+    """Zeigt alle aktuell verfügbaren freien Termine an."""
     slots = await manager.get_available_slots()
     if not slots:
         embed = discord.Embed(
@@ -184,6 +199,7 @@ async def view_slots(ctx):
 @bot.slash_command(description="Einen freien Slot buchen")
 @option("slot_id", description="Die ID des Slots, den du buchen möchtest")
 async def book(ctx, slot_id: int):
+    """Bucht einen freien Termin für den Nutzer."""
     success, message = await manager.book_slot(slot_id, ctx.author.id)
     if success:
         embed = discord.Embed(
@@ -202,6 +218,7 @@ async def book(ctx, slot_id: int):
 
 @bot.slash_command(description="Deine eigenen Buchungen anzeigen")
 async def my_bookings(ctx):
+    """Listet alle vom Nutzer gebuchten Termine auf."""
     slots = await manager.get_user_bookings(ctx.author.id)
     if not slots:
         embed = discord.Embed(
@@ -227,6 +244,7 @@ async def my_bookings(ctx):
 @bot.slash_command(description="Eine deiner Buchungen stornieren")
 @option("slot_id", description="Die ID des Slots, den du stornieren möchtest")
 async def cancel(ctx, slot_id: int):
+    """Storniert eine vorhandene Buchung des Nutzers."""
     success, message = await manager.cancel_booking(slot_id, ctx.author.id)
     if success:
         embed = discord.Embed(
