@@ -79,5 +79,36 @@ class TestBookingManager(unittest.IsolatedAsyncioTestCase):
         none_slot = await self.manager.get_slot_by_id(999)
         self.assertIsNone(none_slot)
 
+    async def test_get_available_slots(self):
+        await self.manager.add_slot("2023-12-01 10:00", "Full", 1)
+        await self.manager.add_slot("2023-12-01 11:00", "Free", 1)
+        await self.manager.book_slot(1, 123)
+
+        available = await self.manager.get_available_slots()
+        self.assertEqual(len(available), 1)
+        self.assertEqual(available[0]["id"], 2)
+
+    async def test_get_user_bookings_multiple(self):
+        await self.manager.add_slot("2023-12-01 10:00", "Slot 1", 1)
+        await self.manager.add_slot("2023-12-01 11:00", "Slot 2", 1)
+        await self.manager.book_slot(1, 123)
+        await self.manager.book_slot(2, 123)
+
+        user_bookings = await self.manager.get_user_bookings(123)
+        self.assertEqual(len(user_bookings), 2)
+
+    async def test_get_all_slots_multiple(self):
+        await self.manager.add_slot("2023-12-01 10:00", "Slot 1", 1)
+        await self.manager.add_slot("2023-12-01 11:00", "Slot 2", 1)
+
+        all_slots = await self.manager.get_all_slots()
+        self.assertEqual(len(all_slots), 2)
+
+    async def test_add_slot_invalid_capacity(self):
+        with self.assertRaises(ValueError):
+            await self.manager.add_slot("2023-12-01 10:00", "Invalid", 0)
+        with self.assertRaises(ValueError):
+            await self.manager.add_slot("2023-12-01 10:00", "Invalid", -1)
+
 if __name__ == "__main__":
     unittest.main()
