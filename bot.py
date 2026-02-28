@@ -42,6 +42,15 @@ async def on_application_command_error(ctx, error):
 @option("beschreibung", description="Kurze Beschreibung des Termins")
 @option("kapazität", description="Maximale Anzahl an möglichen Buchungen", default=1)
 async def add_slot(ctx, datum: str, beschreibung: str, kapazität: int):
+    if kapazität < 1:
+        embed = discord.Embed(
+            title="Fehler",
+            description="❌ Die Kapazität muss mindestens 1 betragen.",
+            color=discord.Color.red()
+        )
+        await ctx.respond(embed=embed, ephemeral=True)
+        return
+
     slot_id = await manager.add_slot(datum, beschreibung, kapazität)
     embed = discord.Embed(
         title="Slot erstellt",
