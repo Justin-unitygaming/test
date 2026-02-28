@@ -9,17 +9,27 @@ class BookingManager:
         self.slots = []
         if os.path.exists(self.filepath):
             try:
-                with open(self.filepath, "r") as f:
+                with open(self.filepath, "r", encoding="utf-8") as f:
                     self.slots = json.load(f)
             except (json.JSONDecodeError, IOError):
                 self.slots = []
 
     async def _save(self):
         # Assumes lock is already held
-        with open(self.filepath, "w") as f:
-            json.dump(self.slots, f, indent=4)
+        temp_filepath = f"{self.filepath}.tmp"
+        try:
+            with open(temp_filepath, "w", encoding="utf-8") as f:
+                json.dump(self.slots, f, indent=4)
+            os.replace(temp_filepath, self.filepath)
+        except Exception as e:
+            if os.path.exists(temp_filepath):
+                os.remove(temp_filepath)
+            raise e
 
     async def add_slot(self, datetime_str, description, capacity=1):
+        if capacity < 1:
+            raise ValueError("Die Kapazität muss mindestens 1 betragen.")
+
         async with self.lock:
             new_id = 1
             if self.slots:
