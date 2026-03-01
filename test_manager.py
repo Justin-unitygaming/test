@@ -23,6 +23,12 @@ class TestBookingManager(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(slots[0]["description"], "Test Slot")
         self.assertEqual(slots[0]["capacity"], 2)
 
+    async def test_add_slot_invalid_capacity(self):
+        with self.assertRaises(ValueError):
+            await self.manager.add_slot("2023-12-01 10:00", "Invalid Slot", 0)
+        with self.assertRaises(ValueError):
+            await self.manager.add_slot("2023-12-01 10:00", "Invalid Slot", -1)
+
     async def test_book_slot_success(self):
         await self.manager.add_slot("2023-12-01 10:00", "Test Slot", 1)
         success, message = await self.manager.book_slot(1, 12345)
@@ -69,6 +75,15 @@ class TestBookingManager(unittest.IsolatedAsyncioTestCase):
         slots = await new_manager.get_all_slots()
         self.assertEqual(len(slots), 1)
         self.assertEqual(slots[0]["description"], "Persist Slot")
+
+    async def test_special_characters(self):
+        # Testing UTF-8 persistence
+        desc = "Spezialtermin mit Umlauten: äöüß"
+        await self.manager.add_slot("2023-12-01 10:00", desc, 1)
+
+        new_manager = BookingManager(self.test_file)
+        slots = await new_manager.get_all_slots()
+        self.assertEqual(slots[-1]["description"], desc)
 
     async def test_get_slot_by_id(self):
         slot_id = await self.manager.add_slot("2023-12-01 10:00", "Find Me", 1)

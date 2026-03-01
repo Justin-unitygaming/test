@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import option
 import os
+import re
 from dotenv import load_dotenv
 from booking_manager import BookingManager
 
@@ -42,6 +43,26 @@ async def on_application_command_error(ctx, error):
 @option("beschreibung", description="Kurze Beschreibung des Termins")
 @option("kapazität", description="Maximale Anzahl an möglichen Buchungen", default=1)
 async def add_slot(ctx, datum: str, beschreibung: str, kapazität: int):
+    if kapazität < 1:
+        embed = discord.Embed(
+            title="Fehler",
+            description="❌ Die Kapazität muss mindestens 1 sein.",
+            color=discord.Color.red()
+        )
+        await ctx.respond(embed=embed, ephemeral=True)
+        return
+
+    # Einfache Validierung des Datumsformats (YYYY-MM-DD HH:MM)
+    date_pattern = r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$"
+    if not re.match(date_pattern, datum):
+        embed = discord.Embed(
+            title="Ungültiges Datumsformat",
+            description="❌ Bitte verwende das Format `YYYY-MM-DD HH:MM` (z.B. 2023-10-27 10:00).",
+            color=discord.Color.red()
+        )
+        await ctx.respond(embed=embed, ephemeral=True)
+        return
+
     slot_id = await manager.add_slot(datum, beschreibung, kapazität)
     embed = discord.Embed(
         title="Slot erstellt",
