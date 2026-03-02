@@ -42,16 +42,24 @@ async def on_application_command_error(ctx, error):
 @option("beschreibung", description="Kurze Beschreibung des Termins")
 @option("kapazität", description="Maximale Anzahl an möglichen Buchungen", default=1)
 async def add_slot(ctx, datum: str, beschreibung: str, kapazität: int):
-    slot_id = await manager.add_slot(datum, beschreibung, kapazität)
-    embed = discord.Embed(
-        title="Slot erstellt",
-        description=f"✅ Slot #{slot_id} wurde erfolgreich erstellt.",
-        color=discord.Color.green()
-    )
-    embed.add_field(name="Datum", value=datum, inline=True)
-    embed.add_field(name="Beschreibung", value=beschreibung, inline=True)
-    embed.add_field(name="Kapazität", value=str(kapazität), inline=True)
-    await ctx.respond(embed=embed)
+    try:
+        slot_id = await manager.add_slot(datum, beschreibung, kapazität)
+        embed = discord.Embed(
+            title="Slot erstellt",
+            description=f"✅ Slot #{slot_id} wurde erfolgreich erstellt.",
+            color=discord.Color.green()
+        )
+        embed.add_field(name="Datum", value=datum, inline=True)
+        embed.add_field(name="Beschreibung", value=beschreibung, inline=True)
+        embed.add_field(name="Kapazität", value=str(kapazität), inline=True)
+        await ctx.respond(embed=embed)
+    except ValueError as e:
+        embed = discord.Embed(
+            title="Fehler beim Erstellen",
+            description=f"❌ {str(e)}",
+            color=discord.Color.red()
+        )
+        await ctx.respond(embed=embed, ephemeral=True)
 
 @bot.slash_command(description="Einen Buchungsslot löschen (Administrator erforderlich)")
 @commands.has_permissions(administrator=True)

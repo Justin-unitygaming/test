@@ -23,6 +23,14 @@ class TestBookingManager(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(slots[0]["description"], "Test Slot")
         self.assertEqual(slots[0]["capacity"], 2)
 
+    async def test_add_slot_invalid_date(self):
+        with self.assertRaises(ValueError):
+            await self.manager.add_slot("invalid-date", "Test", 1)
+
+    async def test_add_slot_invalid_capacity(self):
+        with self.assertRaises(ValueError):
+            await self.manager.add_slot("2023-12-01 10:00", "Test", 0)
+
     async def test_book_slot_success(self):
         await self.manager.add_slot("2023-12-01 10:00", "Test Slot", 1)
         success, message = await self.manager.book_slot(1, 12345)
