@@ -1,6 +1,7 @@
 import json
 import asyncio
 import os
+from datetime import datetime
 
 class BookingManager:
     def __init__(self, filepath="bookings.json"):
@@ -9,17 +10,28 @@ class BookingManager:
         self.slots = []
         if os.path.exists(self.filepath):
             try:
-                with open(self.filepath, "r") as f:
+                with open(self.filepath, "r", encoding="utf-8") as f:
                     self.slots = json.load(f)
             except (json.JSONDecodeError, IOError):
                 self.slots = []
 
     async def _save(self):
         # Assumes lock is already held
-        with open(self.filepath, "w") as f:
-            json.dump(self.slots, f, indent=4)
+        tmp_file = self.filepath + ".tmp"
+        with open(tmp_file, "w", encoding="utf-8") as f:
+            json.dump(self.slots, f, indent=4, ensure_ascii=False)
+        os.replace(tmp_file, self.filepath)
 
     async def add_slot(self, datetime_str, description, capacity=1):
+        # Validierung von Datum und Kapazität
+        try:
+            datetime.strptime(datetime_str, "%Y-%m-%d %H:%M")
+        except ValueError:
+            return None, "Ungültiges Datumsformat. Bitte verwende 'YYYY-MM-DD HH:MM'."
+
+        if capacity < 1:
+            return None, "Die Kapazität muss mindestens 1 sein."
+
         async with self.lock:
             new_id = 1
             if self.slots:
@@ -34,7 +46,7 @@ class BookingManager:
             }
             self.slots.append(new_slot)
             await self._save()
-            return new_id
+            return new_id, None
 
     async def delete_slot(self, slot_id):
         async with self.lock:
