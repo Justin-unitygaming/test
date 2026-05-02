@@ -26,6 +26,14 @@ async def on_application_command_error(ctx, error):
             color=discord.Color.red()
         )
         await ctx.respond(embed=embed, ephemeral=True)
+    elif isinstance(error, discord.ApplicationCommandInvokeError) and isinstance(error.original, commands.MissingPermissions):
+         # This part is sometimes needed depending on how py-cord handles it
+        embed = discord.Embed(
+            title="Fehler",
+            description="Du hast nicht die erforderlichen Berechtigungen (Administrator), um diesen Befehl auszuführen.",
+            color=discord.Color.red()
+        )
+        await ctx.respond(embed=embed, ephemeral=True)
     else:
         print(f"Ein Fehler ist aufgetreten: {error}")
         embed = discord.Embed(
@@ -40,9 +48,18 @@ async def on_application_command_error(ctx, error):
 @commands.has_permissions(administrator=True)
 @option("datum", description="Datum und Uhrzeit des Slots (z.B. 2023-10-27 10:00)")
 @option("beschreibung", description="Kurze Beschreibung des Termins")
-@option("kapazität", description="Maximale Anzahl an möglichen Buchungen", default=1)
-async def add_slot(ctx, datum: str, beschreibung: str, kapazität: int):
-    slot_id = await manager.add_slot(datum, beschreibung, kapazität)
+@option("kapazitaet", description="Maximale Anzahl an möglichen Buchungen", default=1, min_value=1)
+async def add_slot(ctx, datum: str, beschreibung: str, kapazitaet: int):
+    slot_id, error = await manager.add_slot(datum, beschreibung, kapazitaet)
+    if error:
+        embed = discord.Embed(
+            title="Fehler",
+            description=f"❌ {error}",
+            color=discord.Color.red()
+        )
+        await ctx.respond(embed=embed, ephemeral=True)
+        return
+
     embed = discord.Embed(
         title="Slot erstellt",
         description=f"✅ Slot #{slot_id} wurde erfolgreich erstellt.",
@@ -50,7 +67,7 @@ async def add_slot(ctx, datum: str, beschreibung: str, kapazität: int):
     )
     embed.add_field(name="Datum", value=datum, inline=True)
     embed.add_field(name="Beschreibung", value=beschreibung, inline=True)
-    embed.add_field(name="Kapazität", value=str(kapazität), inline=True)
+    embed.add_field(name="Kapazität", value=str(kapazitaet), inline=True)
     await ctx.respond(embed=embed)
 
 @bot.slash_command(description="Einen Buchungsslot löschen (Administrator erforderlich)")
