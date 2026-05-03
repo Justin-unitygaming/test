@@ -1,6 +1,7 @@
 import json
 import asyncio
 import os
+from datetime import datetime
 
 class BookingManager:
     def __init__(self, filepath="bookings.json"):
@@ -9,18 +10,32 @@ class BookingManager:
         self.slots = []
         if os.path.exists(self.filepath):
             try:
-                with open(self.filepath, "r") as f:
+                with open(self.filepath, "r", encoding="utf-8") as f:
                     self.slots = json.load(f)
             except (json.JSONDecodeError, IOError):
                 self.slots = []
 
+    def _write_file(self, data):
+        tmp_path = self.filepath + ".tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+        os.replace(tmp_path, self.filepath)
+
     async def _save(self):
         # Assumes lock is already held
-        with open(self.filepath, "w") as f:
-            json.dump(self.slots, f, indent=4)
+        await asyncio.to_thread(self._write_file, self.slots)
 
     async def add_slot(self, datetime_str, description, capacity=1):
         async with self.lock:
+            # Validierung
+            try:
+                datetime.strptime(datetime_str, '%Y-%m-%d %H:%M')
+            except ValueError:
+                return None, "Ungültiges Datumsformat. Bitte verwende 'YYYY-MM-DD HH:MM'."
+
+            if capacity < 1:
+                return None, "Die Kapazität muss mindestens 1 betragen."
+
             new_id = 1
             if self.slots:
                 new_id = max(slot["id"] for slot in self.slots) + 1
@@ -34,7 +49,7 @@ class BookingManager:
             }
             self.slots.append(new_slot)
             await self._save()
-            return new_id
+            return new_id, None
 
     async def delete_slot(self, slot_id):
         async with self.lock:
@@ -75,17 +90,17 @@ class BookingManager:
 
     async def get_available_slots(self):
         async with self.lock:
-            return [slot for slot in self.slots if len(slot["bookings"]) < slot["capacity"]]
+            return [dict(slot) for slot in self.slots if len(slot["bookings"]) < slot["capacity"]]
 
     async def get_user_bookings(self, user_id):
         async with self.lock:
             user_id_str = str(user_id)
-            return [slot for slot in self.slots if user_id_str in [str(u) for u in slot["bookings"]]]
+            return [dict(slot) for slot in self.slots if user_id_str in [str(u) for u in slot["bookings"]]]
 
     async def get_all_slots(self):
         async with self.lock:
             # Return a copy to avoid external modification of the list
-            return list(self.slots)
+            return [dict(slot) for slot in self.slots]
 
     async def get_slot_by_id(self, slot_id):
         async with self.lock:
