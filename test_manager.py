@@ -16,8 +16,9 @@ class TestBookingManager(unittest.IsolatedAsyncioTestCase):
             os.remove(self.test_file)
 
     async def test_add_slot(self):
-        slot_id = await self.manager.add_slot("2023-12-01 10:00", "Test Slot", 2)
+        slot_id, error = await self.manager.add_slot("2023-12-01 10:00", "Test Slot", 2)
         self.assertEqual(slot_id, 1)
+        self.assertIsNone(error)
         slots = await self.manager.get_all_slots()
         self.assertEqual(len(slots), 1)
         self.assertEqual(slots[0]["description"], "Test Slot")
@@ -71,13 +72,31 @@ class TestBookingManager(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(slots[0]["description"], "Persist Slot")
 
     async def test_get_slot_by_id(self):
-        slot_id = await self.manager.add_slot("2023-12-01 10:00", "Find Me", 1)
+        slot_id, error = await self.manager.add_slot("2023-12-01 10:00", "Find Me", 1)
         slot = await self.manager.get_slot_by_id(slot_id)
         self.assertIsNotNone(slot)
         self.assertEqual(slot["description"], "Find Me")
 
         none_slot = await self.manager.get_slot_by_id(999)
         self.assertIsNone(none_slot)
+
+    async def test_add_slot_invalid_date(self):
+        slot_id, error = await self.manager.add_slot("01.12.2023 10:00", "Invalid Date", 1)
+        self.assertIsNone(slot_id)
+        self.assertEqual(error, "Ungültiges Datumsformat. Bitte verwende 'YYYY-MM-DD HH:MM'.")
+
+    async def test_add_slot_invalid_capacity(self):
+        slot_id, error = await self.manager.add_slot("2023-12-01 10:00", "Invalid Capacity", 0)
+        self.assertIsNone(slot_id)
+        self.assertEqual(error, "Die Kapazität muss mindestens 1 sein.")
+
+    async def test_deep_copy_get_all_slots(self):
+        await self.manager.add_slot("2023-12-01 10:00", "Deep Copy", 1)
+        slots = await self.manager.get_all_slots()
+        slots[0]["description"] = "Modified"
+
+        original_slots = await self.manager.get_all_slots()
+        self.assertEqual(original_slots[0]["description"], "Deep Copy")
 
 if __name__ == "__main__":
     unittest.main()
