@@ -40,18 +40,26 @@ async def on_application_command_error(ctx, error):
 @commands.has_permissions(administrator=True)
 @option("datum", description="Datum und Uhrzeit des Slots (z.B. 2023-10-27 10:00)")
 @option("beschreibung", description="Kurze Beschreibung des Termins")
-@option("kapazität", description="Maximale Anzahl an möglichen Buchungen", default=1)
+@option("kapazität", description="Maximale Anzahl an möglichen Buchungen", default=1, min_value=1)
 async def add_slot(ctx, datum: str, beschreibung: str, kapazität: int):
-    slot_id = await manager.add_slot(datum, beschreibung, kapazität)
-    embed = discord.Embed(
-        title="Slot erstellt",
-        description=f"✅ Slot #{slot_id} wurde erfolgreich erstellt.",
-        color=discord.Color.green()
-    )
-    embed.add_field(name="Datum", value=datum, inline=True)
-    embed.add_field(name="Beschreibung", value=beschreibung, inline=True)
-    embed.add_field(name="Kapazität", value=str(kapazität), inline=True)
-    await ctx.respond(embed=embed)
+    slot_id, error = await manager.add_slot(datum, beschreibung, kapazität)
+    if error:
+        embed = discord.Embed(
+            title="Fehler",
+            description=f"❌ {error}",
+            color=discord.Color.red()
+        )
+        await ctx.respond(embed=embed, ephemeral=True)
+    else:
+        embed = discord.Embed(
+            title="Slot erstellt",
+            description=f"✅ Slot #{slot_id} wurde erfolgreich erstellt.",
+            color=discord.Color.green()
+        )
+        embed.add_field(name="Datum", value=datum, inline=True)
+        embed.add_field(name="Beschreibung", value=beschreibung, inline=True)
+        embed.add_field(name="Kapazität", value=str(kapazität), inline=True)
+        await ctx.respond(embed=embed)
 
 @bot.slash_command(description="Einen Buchungsslot löschen (Administrator erforderlich)")
 @commands.has_permissions(administrator=True)
