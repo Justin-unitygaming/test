@@ -15,13 +15,24 @@ class TestBookingManager(unittest.IsolatedAsyncioTestCase):
         if os.path.exists(self.test_file):
             os.remove(self.test_file)
 
-    async def test_add_slot(self):
-        slot_id = await self.manager.add_slot("2023-12-01 10:00", "Test Slot", 2)
+    async def test_add_slot_success(self):
+        slot_id, error = await self.manager.add_slot("2023-12-01 10:00", "Test Slot", 2)
+        self.assertIsNone(error)
         self.assertEqual(slot_id, 1)
         slots = await self.manager.get_all_slots()
         self.assertEqual(len(slots), 1)
         self.assertEqual(slots[0]["description"], "Test Slot")
         self.assertEqual(slots[0]["capacity"], 2)
+
+    async def test_add_slot_invalid_date(self):
+        slot_id, error = await self.manager.add_slot("invalid-date", "Test Slot", 1)
+        self.assertIsNone(slot_id)
+        self.assertIn("Ungültiges Datumsformat", error)
+
+    async def test_add_slot_invalid_capacity(self):
+        slot_id, error = await self.manager.add_slot("2023-12-01 10:00", "Test Slot", 0)
+        self.assertIsNone(slot_id)
+        self.assertIn("Kapazität muss mindestens 1 sein", error)
 
     async def test_book_slot_success(self):
         await self.manager.add_slot("2023-12-01 10:00", "Test Slot", 1)
@@ -71,13 +82,22 @@ class TestBookingManager(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(slots[0]["description"], "Persist Slot")
 
     async def test_get_slot_by_id(self):
-        slot_id = await self.manager.add_slot("2023-12-01 10:00", "Find Me", 1)
+        slot_id, error = await self.manager.add_slot("2023-12-01 10:00", "Find Me", 1)
         slot = await self.manager.get_slot_by_id(slot_id)
         self.assertIsNotNone(slot)
         self.assertEqual(slot["description"], "Find Me")
 
         none_slot = await self.manager.get_slot_by_id(999)
         self.assertIsNone(none_slot)
+
+    async def test_get_available_slots(self):
+        await self.manager.add_slot("2023-12-01 10:00", "Available", 1)
+        await self.manager.add_slot("2023-12-01 11:00", "Full", 1)
+        await self.manager.book_slot(2, 123)
+
+        available = await self.manager.get_available_slots()
+        self.assertEqual(len(available), 1)
+        self.assertEqual(available[0]["id"], 1)
 
 if __name__ == "__main__":
     unittest.main()
